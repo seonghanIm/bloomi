@@ -38,15 +38,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String providerId = (String) attributes.get("sub");
 
         // 사용자 조회 또는 생성
+        boolean isNewUser = userRepository.findByProviderAndProviderId(registrationId, providerId).isEmpty();
+
         User user = userRepository.findByProviderAndProviderId(registrationId, providerId)
                 .map(existingUser -> {
-                    // 기존 사용자 정보 업데이트
-                    log.info("Existing user found: {}", existingUser.email());
+                    // 기존 사용자 - 로그인 처리
+                    log.info("🔐 [로그인] 기존 사용자: email={}, provider={}", existingUser.email(), registrationId);
                     return existingUser.update(name, picture);
                 })
                 .orElseGet(() -> {
-                    // 새 사용자 생성
-                    log.info("Creating new user: {}", email);
+                    // 신규 사용자 - 회원가입 처리
+                    log.info("✨ [회원가입] 신규 사용자 생성: email={}, provider={}", email, registrationId);
                     return User.of(
                             UUID.randomUUID().toString(),
                             email,
@@ -60,7 +62,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 사용자 저장
         user = userRepository.save(user);
 
-        log.info("User authenticated: id={}, email={}", user.id(), user.email());
+        if (isNewUser) {
+            log.info("✅ [회원가입 완료] userId={}, email={}", user.id(), user.email());
+        } else {
+            log.info("✅ [로그인 완료] userId={}, email={}", user.id(), user.email());
+        }
 
         return new CustomOAuth2User(
                 user.id(),
