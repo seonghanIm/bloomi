@@ -40,3 +40,8 @@ out/
 .env
 .env.local
 .env.*.local
+
+### Logs ###
+logs/
+*.log
+*.log.*
