@@ -45,3 +45,7 @@ out/
 logs/
 *.log
 *.log.*
+
+### Docker ###
+.docker/
+docker-compose.override.yml

@@ -1,0 +1,24 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: bloomi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bloomi
+      POSTGRES_USER: bloomi
+      POSTGRES_PASSWORD: bloomi_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bloomi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local

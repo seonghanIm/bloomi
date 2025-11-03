@@ -1,6 +1,7 @@
 package com.han.bloomi.infra.security;
 
-import com.han.bloomi.domain.model.User;
+import com.han.bloomi.domain.model.user.Membership;
+import com.han.bloomi.domain.model.user.User;
 import com.han.bloomi.domain.port.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             name,
                             picture,
                             registrationId,
-                            providerId
+                            providerId,
+                            Membership.FREE
                     );
                 });
 
@@ -73,6 +75,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user.email(),
                 user.name(),
                 user.picture(),
+                user.provider(),
+                user.membership(),
                 attributes
         );
     }

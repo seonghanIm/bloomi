@@ -9,6 +9,7 @@ import java.util.List;
  */
 @Builder
 public record VisionAnalysisResult(
+    String name,
     Double calories,
     Macros macros,
     Serving serving,

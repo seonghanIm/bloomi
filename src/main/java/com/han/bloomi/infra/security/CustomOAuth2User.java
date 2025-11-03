@@ -1,5 +1,6 @@
 package com.han.bloomi.infra.security;
 
+import com.han.bloomi.domain.model.user.Membership;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,6 +20,8 @@ public class CustomOAuth2User implements OAuth2User {
     private final String email;
     private final String name;
     private final String picture;
+    private final String provider;
+    private final Membership membership;
     private final Map<String, Object> attributes;
 
     @Override

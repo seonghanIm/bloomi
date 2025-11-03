@@ -1,7 +1,8 @@
-package com.han.bloomi.domain.model;
+package com.han.bloomi.domain.model.user;
 
 import lombok.Builder;
 
+import java.lang.reflect.Member;
 import java.time.LocalDateTime;
 
 /**
@@ -16,11 +17,14 @@ public record User(
     String picture,         // 프로필 이미지 URL
     String provider,        // OAuth 제공자 (google, kakao 등)
     String providerId,      // Provider에서의 사용자 ID
+    Membership membership,
+    Boolean deleted,        // 삭제 여부 (soft delete)
+    LocalDateTime deletedAt,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
     public static User of(String id, String email, String name, String picture,
-                          String provider, String providerId) {
+                          String provider, String providerId, Membership membership) {
         LocalDateTime now = LocalDateTime.now();
         return User.builder()
                 .id(id)
@@ -29,6 +33,9 @@ public record User(
                 .picture(picture)
                 .provider(provider)
                 .providerId(providerId)
+                .membership(membership)
+                .deleted(false)
+                .deletedAt(null)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -42,8 +49,27 @@ public record User(
                 .picture(picture)
                 .provider(this.provider)
                 .providerId(this.providerId)
+                .membership(this.membership)
+                .deleted(this.deleted)
+                .deletedAt(this.deletedAt)
                 .createdAt(this.createdAt)
                 .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public User delete() {
+        return User.builder()
+                .id(this.id)
+                .email(this.email)
+                .name(this.name)
+                .picture(this.picture)
+                .provider(this.provider)
+                .providerId(this.providerId)
+                .membership(this.membership)
+                .deleted(true)
+                .deletedAt(LocalDateTime.now())
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
                 .build();
     }
 }
