@@ -1,6 +1,6 @@
 package com.han.bloomi.infra.user;
 
-import com.han.bloomi.domain.model.User;
+import com.han.bloomi.domain.model.user.User;
 import com.han.bloomi.domain.port.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -29,6 +29,7 @@ public class UserRepositoryAdapter implements UserRepository {
                         .picture(user.picture())
                         .provider(user.provider())
                         .providerId(user.providerId())
+                        .membership(user.membership())
                         .build());
 
         UserEntity saved = jpaRepository.save(entity);
@@ -50,6 +51,22 @@ public class UserRepositoryAdapter implements UserRepository {
         return jpaRepository.findById(id).map(this::toDomain);
     }
 
+    @Override
+    public User delete(String id) {
+        UserEntity entity = jpaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        // 도메인 객체로 변환 후 delete() 호출 (비즈니스 로직은 도메인에서)
+        User user = toDomain(entity);
+        User deletedUser = user.delete();
+
+        // Entity에 반영
+        entity.delete();
+        jpaRepository.save(entity);
+
+        return deletedUser;
+    }
+
     private User toDomain(UserEntity entity) {
         return User.builder()
                 .id(entity.getId())
@@ -58,6 +75,9 @@ public class UserRepositoryAdapter implements UserRepository {
                 .picture(entity.getPicture())
                 .provider(entity.getProvider())
                 .providerId(entity.getProviderId())
+                .membership(entity.getMembership())
+                .deleted(entity.getDeleted())
+                .deletedAt(entity.getDeletedAt())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

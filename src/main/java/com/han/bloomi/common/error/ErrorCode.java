@@ -12,6 +12,9 @@ public enum ErrorCode {
     MISSING_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "MISSING_FIELD", "Required field is missing"),
     INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_IMAGE", "Invalid image format"),
 
+    // 404 Not Found
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"),
+
     // 413 Payload Too Large
     PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", "Image size exceeds limit"),
 

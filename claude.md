@@ -173,6 +173,152 @@ com.han.bloomi
 
 * `GET /actuator/health` (Spring Boot Actuator)
 
+### 4.3 표준 API 응답 구조 (ApiResponse)
+
+**모든 API는 일관된 응답 구조를 사용합니다.**
+
+#### 응답 구조
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "Success message",
+  "data": { ... },
+  "traceId": "abc123"
+}
+```
+
+| 필드 | 타입 | 설명 | 필수 |
+|------|------|------|------|
+| code | String | 응답 코드 (SUCCESS, AUTH_SUCCESS 등) | O |
+| message | String | 사람이 읽을 수 있는 메시지 | O |
+| data | Object | 실제 응답 데이터 (타입에 따라 다름) | X |
+| traceId | String | 요청 추적 ID (디버깅용) | X |
+
+#### 성공 응답 예시
+
+**칼로리 분석 API** - `POST /api/v1/meal/analyze`
+```json
+{
+  "code": "SUCCESS",
+  "message": "Meal analysis completed",
+  "data": {
+    "calories": 523.0,
+    "macros": {"carbs": 65.3, "protein": 24.1, "fat": 19.8},
+    "serving": {"unit": "g", "amount": 350},
+    "items": [...],
+    "confidence": 0.78,
+    "advice": "단백질 비율이 좋아요. 소금은 줄이세요.",
+    "traceId": "2b6f-..."
+  }
+}
+```
+
+**OAuth 콜백** - `GET /auth/callback`
+```json
+{
+  "code": "AUTH_SUCCESS",
+  "message": "Authentication successful",
+  "data": {
+    "accessToken": "eyJhbGc...",
+    "refreshToken": "eyJhbGc...",
+    "expiresIn": 3600
+  }
+}
+```
+
+**사용자 정보 조회** - `GET /auth/me`
+```json
+{
+  "code": "SUCCESS",
+  "message": "User info retrieved",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@gmail.com",
+    "name": "홍길동",
+    "picture": "https://...",
+    "provider": "google",
+    "membership": "FREE",
+    "createdAt": "2025-11-03T11:30:00",
+    "updatedAt": "2025-11-03T11:30:00"
+  }
+}
+```
+
+**데이터 없는 성공 응답** - `DELETE /auth/me`
+```json
+{
+  "code": "SUCCESS",
+  "message": "User deleted successfully"
+}
+```
+
+#### 에러 응답 구조
+
+에러는 별도의 `ErrorResponse` 구조를 사용:
+
+```json
+{
+  "code": "VISION_TIMEOUT",
+  "message": "Provider timeout",
+  "traceId": "abc123",
+  "detail": "OpenAI API timeout after 30s"
+}
+```
+
+**에러 코드 예시**:
+- `INVALID_INPUT`: 입력 유효성 실패
+- `INVALID_IMAGE`: 이미지 형식 오류
+- `PAYLOAD_TOO_LARGE`: 파일 크기 초과
+- `RATE_LIMIT_EXCEEDED`: 레이트 리밋 초과
+- `VISION_TIMEOUT`: Vision API 타임아웃
+- `INTERNAL_SERVER_ERROR`: 서버 내부 오류
+
+#### 구현 코드
+
+**ApiResponse 제네릭 클래스** (`common/response/ApiResponse.java`):
+```java
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ApiResponse<T>(
+    String code,
+    String message,
+    T data,
+    String traceId
+) {
+    public static <T> ApiResponse<T> success(T data) {
+        return ApiResponse.<T>builder()
+            .code("SUCCESS")
+            .message("Success")
+            .data(data)
+            .build();
+    }
+
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return ApiResponse.<T>builder()
+            .code("SUCCESS")
+            .message(message)
+            .data(data)
+            .build();
+    }
+}
+```
+
+**컨트롤러 사용 예시**:
+```java
+@PostMapping("/analyze")
+public ApiResponse<AnalyzeMealResponse> analyze(...) {
+    AnalyzeMealResponse response = service.analyze(image, request);
+    return ApiResponse.success("Meal analysis completed", response);
+}
+
+@GetMapping("/me")
+public ApiResponse<UserResponse> getCurrentUser(...) {
+    UserResponse user = userService.getUser(userId);
+    return ApiResponse.success("User info retrieved", user);
+}
+```
+
 ---
 
 ## 5) DTO/계약

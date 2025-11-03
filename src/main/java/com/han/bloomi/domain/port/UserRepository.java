@@ -1,6 +1,6 @@
 package com.han.bloomi.domain.port;
 
-import com.han.bloomi.domain.model.User;
+import com.han.bloomi.domain.model.user.User;
 
 import java.util.Optional;
 
@@ -28,4 +28,11 @@ public interface UserRepository {
      * ID로 사용자 조회
      */
     Optional<User> findById(String id);
+
+    /**
+     * 사용자 삭제 (Soft Delete)
+     * @param id 사용자 ID
+     * @return 삭제된 사용자
+     */
+    User delete(String id);
 }

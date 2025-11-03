@@ -10,6 +10,7 @@ import java.util.List;
  */
 @Builder
 public record MealAnalysis(
+    String name,
     double calories,
     Macros macros,
     Serving serving,
@@ -18,6 +19,7 @@ public record MealAnalysis(
     String advice
 ) {
     public static MealAnalysis of(
+            String name,
             double calories,
             Macros macros,
             Serving serving,
@@ -26,6 +28,7 @@ public record MealAnalysis(
             String advice
     ) {
         return MealAnalysis.builder()
+                .name(name)
                 .calories(calories)
                 .macros(macros)
                 .serving(serving)

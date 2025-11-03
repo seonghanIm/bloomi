@@ -18,6 +18,7 @@ public class OpenAiResponseMapper {
 
     public MealAnalysis toDomain(VisionAnalysisResult result) {
         return MealAnalysis.builder()
+                .name(result.name() != null ? result.name() : "음식")
                 .calories(result.calories() != null ? result.calories() : 0.0)
                 .macros(mapMacros(result.macros()))
                 .serving(mapServing(result.serving()))

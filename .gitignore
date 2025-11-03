@@ -40,3 +40,7 @@ out/
 .env
 .env.local
 .env.*.local
+
+### Docker ###
+.docker/
+docker-compose.override.yml

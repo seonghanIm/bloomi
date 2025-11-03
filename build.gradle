@@ -31,13 +31,26 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // .env 파일 자동 로드
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
-    runtimeOnly 'com.h2database:h2'
+
+    // AWS SDK for S3
+    implementation 'software.amazon.awssdk:s3:2.20.56'
+
+    // Swagger/OpenAPI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'  // 테스트용 유지
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    // developmentOnly 'org.springframework.boot:spring-boot-docker-compose'  // Docker 사용 시 활성화
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'  // Docker 사용
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
