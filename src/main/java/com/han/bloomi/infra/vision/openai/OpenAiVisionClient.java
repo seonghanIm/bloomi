@@ -1,5 +1,8 @@
 package com.han.bloomi.infra.vision.openai;
 
+import com.han.bloomi.common.error.ErrorCode;
+import com.han.bloomi.common.exception.BusinessException;
+import com.han.bloomi.common.exception.VisionException;
 import com.han.bloomi.domain.model.MealAnalysis;
 import com.han.bloomi.domain.model.MealAnalysisRequest;
 import com.han.bloomi.infra.vision.VisionClient;
@@ -51,15 +54,22 @@ public class OpenAiVisionClient implements VisionClient {
 
         // 4. 응답 JSON 파싱
         String content = apiResponse.getContent();
-        if (content == null || content.isBlank()) {
+
+
+        if (content == null || content.isBlank()|| "{}".equals(content)) {
             log.warn("Empty content from OpenAI API");
-            throw new IllegalStateException("Empty response content from OpenAI");
+            throw new VisionException(ErrorCode.VISION_API_ERROR, "Empty content from OpenAI API");
         }
 
         VisionAnalysisResult analysisResult = httpClient.parseContent(content, VisionAnalysisResult.class);
 
         // 5. MealAnalysis 도메인 객체로 변환
         MealAnalysis result = responseMapper.toDomain(analysisResult);
+
+        if(result.advice().equals("no meal") || result.advice().isBlank()) {
+            log.warn("No meal");
+            throw new VisionException(ErrorCode.VISION_NO_MEAL, "No meal");
+        }
 
         log.info("OpenAI analysis completed - Calories: {}, Confidence: {}",
                 result.calories(), result.confidence());

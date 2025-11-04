@@ -67,6 +67,16 @@ public class UserRepositoryAdapter implements UserRepository {
         return deletedUser;
     }
 
+    @Override
+    public User incrementDailyRequestCount(String userId) {
+        UserEntity entity = jpaRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        entity.incrementDailyRequestCount();
+        UserEntity saved = jpaRepository.save(entity);
+        return toDomain(saved);
+    }
+
     private User toDomain(UserEntity entity) {
         return User.builder()
                 .id(entity.getId())
@@ -76,6 +86,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .provider(entity.getProvider())
                 .providerId(entity.getProviderId())
                 .membership(entity.getMembership())
+                .dailyRequestCount(entity.getDailyRequestCount())
+                .lastRequestDate(entity.getLastRequestDate())
                 .deleted(entity.getDeleted())
                 .deletedAt(entity.getDeletedAt())
                 .createdAt(entity.getCreatedAt())

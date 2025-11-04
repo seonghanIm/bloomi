@@ -35,4 +35,11 @@ public interface UserRepository {
      * @return 삭제된 사용자
      */
     User delete(String id);
+
+    /**
+     * 일일 요청 카운트를 증가시킵니다.
+     * @param userId 사용자 ID
+     * @return 업데이트된 사용자
+     */
+    User incrementDailyRequestCount(String userId);
 }

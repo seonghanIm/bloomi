@@ -43,6 +43,11 @@ public class UserEntity {
     private Membership membership;
 
     @Column(nullable = false)
+    private Integer dailyRequestCount = 0;
+
+    private LocalDateTime lastRequestDate;
+
+    @Column(nullable = false)
     private Boolean deleted = false;
 
     private LocalDateTime deletedAt;
@@ -78,5 +83,28 @@ public class UserEntity {
     public void delete() {
         this.deleted = true;
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void incrementDailyRequestCount() {
+        LocalDateTime now = LocalDateTime.now();
+        boolean isNewDay = this.lastRequestDate == null ||
+                          !this.lastRequestDate.toLocalDate().equals(now.toLocalDate());
+
+        if (isNewDay) {
+            this.dailyRequestCount = 1;
+        } else {
+            this.dailyRequestCount++;
+        }
+        this.lastRequestDate = now;
+    }
+
+    public boolean hasExceededDailyLimit() {
+        if (this.membership == Membership.FREE) {
+            LocalDateTime now = LocalDateTime.now();
+            boolean isSameDay = this.lastRequestDate != null &&
+                              this.lastRequestDate.toLocalDate().equals(now.toLocalDate());
+            return isSameDay && this.dailyRequestCount >= 3;
+        }
+        return false; // PREMIUM은 제한 없음
     }
 }

@@ -23,6 +23,7 @@ public enum ErrorCode {
 
     // 429 Too Many Requests
     TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMIT_EXCEEDED", "Rate limit exceeded"),
+    DAILY_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "DAILY_LIMIT_EXCEEDED", "일일 사용 횟수를 초과했습니다. Bloomi는 일 3회의 무료 식단 분석을 제공합니다."),
 
     // 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Internal server error"),
@@ -30,7 +31,9 @@ public enum ErrorCode {
     // 502 Bad Gateway
     VISION_API_ERROR(HttpStatus.BAD_GATEWAY, "VISION_API_ERROR", "Vision API error occurred"),
     VISION_TIMEOUT(HttpStatus.BAD_GATEWAY, "VISION_TIMEOUT", "Provider timeout"),
-    VISION_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "VISION_INVALID_RESPONSE", "Invalid response from vision provider");
+    VISION_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "VISION_INVALID_RESPONSE", "Invalid response from vision provider"),
+    VISION_NO_MEAL(HttpStatus.BAD_REQUEST, "VISION_NO_MEAL", "음식 사진이 아닙니다.")
+    ;
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -18,6 +18,8 @@ public record User(
     String provider,        // OAuth 제공자 (google, kakao 등)
     String providerId,      // Provider에서의 사용자 ID
     Membership membership,
+    Integer dailyRequestCount,  // 일일 요청 횟수
+    LocalDateTime lastRequestDate, // 마지막 요청 날짜
     Boolean deleted,        // 삭제 여부 (soft delete)
     LocalDateTime deletedAt,
     LocalDateTime createdAt,
@@ -34,6 +36,8 @@ public record User(
                 .provider(provider)
                 .providerId(providerId)
                 .membership(membership)
+                .dailyRequestCount(0)
+                .lastRequestDate(null)
                 .deleted(false)
                 .deletedAt(null)
                 .createdAt(now)
@@ -50,6 +54,8 @@ public record User(
                 .provider(this.provider)
                 .providerId(this.providerId)
                 .membership(this.membership)
+                .dailyRequestCount(this.dailyRequestCount)
+                .lastRequestDate(this.lastRequestDate)
                 .deleted(this.deleted)
                 .deletedAt(this.deletedAt)
                 .createdAt(this.createdAt)
@@ -66,10 +72,53 @@ public record User(
                 .provider(this.provider)
                 .providerId(this.providerId)
                 .membership(this.membership)
+                .dailyRequestCount(this.dailyRequestCount)
+                .lastRequestDate(this.lastRequestDate)
                 .deleted(true)
                 .deletedAt(LocalDateTime.now())
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)
                 .build();
+    }
+
+    /**
+     * 일일 요청 횟수를 증가시킵니다.
+     * - 날짜가 변경되었으면 카운트를 1로 초기화
+     * - 같은 날이면 카운트 증가
+     */
+    public User incrementDailyRequestCount() {
+        LocalDateTime now = LocalDateTime.now();
+        boolean isNewDay = this.lastRequestDate == null ||
+                          !this.lastRequestDate.toLocalDate().equals(now.toLocalDate());
+
+        return User.builder()
+                .id(this.id)
+                .email(this.email)
+                .name(this.name)
+                .picture(this.picture)
+                .provider(this.provider)
+                .providerId(this.providerId)
+                .membership(this.membership)
+                .dailyRequestCount(isNewDay ? 1 : this.dailyRequestCount + 1)
+                .lastRequestDate(now)
+                .deleted(this.deleted)
+                .deletedAt(this.deletedAt)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
+    }
+
+    /**
+     * 일일 요청 제한을 초과했는지 확인합니다.
+     * FREE 멤버십: 하루 3회 제한
+     */
+    public boolean hasExceededDailyLimit() {
+        if (this.membership == Membership.FREE) {
+            LocalDateTime now = LocalDateTime.now();
+            boolean isSameDay = this.lastRequestDate != null &&
+                              this.lastRequestDate.toLocalDate().equals(now.toLocalDate());
+            return isSameDay && this.dailyRequestCount >= 3;
+        }
+        return false; // PREMIUM은 제한 없음
     }
 }
