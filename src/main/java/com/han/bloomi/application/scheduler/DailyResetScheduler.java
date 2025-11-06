@@ -1,4 +1,4 @@
-package com.han.bloomi.application.service;
+package com.han.bloomi.application.scheduler;
 
 import com.han.bloomi.domain.port.UserRepository;
 import lombok.RequiredArgsConstructor;
