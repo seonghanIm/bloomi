@@ -42,4 +42,10 @@ public interface UserRepository {
      * @return 업데이트된 사용자
      */
     User incrementDailyRequestCount(String userId);
+
+    /**
+     * 모든 사용자의 일일 요청 카운트를 0으로 리셋합니다.
+     * 스케줄러에서 자정에 호출됩니다.
+     */
+    void resetAllDailyRequestCounts();
 }

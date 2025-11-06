@@ -77,6 +77,11 @@ public class UserRepositoryAdapter implements UserRepository {
         return toDomain(saved);
     }
 
+    @Override
+    public void resetAllDailyRequestCounts() {
+        jpaRepository.resetAllDailyRequestCounts();
+    }
+
     private User toDomain(UserEntity entity) {
         return User.builder()
                 .id(entity.getId())
