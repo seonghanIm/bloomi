@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -37,6 +38,7 @@ public class MealAnalyzeService {
     private final CurrentUserService currentUserService;
     private final TraceIdHolder traceIdHolder;
     private final ImageUploadService imageUploadService;
+    private final ImageProcessor imageProcessor;
 
     @Transactional
     public AnalyzeMealResponse analyze(AnalyzeMealRequest request) {
@@ -55,13 +57,23 @@ public class MealAnalyzeService {
                     String.format("User %s has exceeded daily limit (count: %d)", userId, user.dailyRequestCount()));
         }
 
-        // 1. S3에 이미지 업로드
-        String imageUrl = imageUploadService.uploadMealImage(request.getImage(), userId);
+        // 1. 이미지 최적화 (리사이즈 + 압축)
+        MultipartFile optimizedImage;
+        try {
+            optimizedImage = imageProcessor.optimize(request.getImage());
+            log.info("[{}] Image optimized", traceId);
+        } catch (Exception e) {
+            log.error("[{}] Image optimization failed, using original", traceId, e);
+            optimizedImage = request.getImage();
+        }
+
+        // 2. S3에 이미지 업로드
+        String imageUrl = imageUploadService.uploadMealImage(optimizedImage, userId);
         log.info("[{}] Image uploaded to S3: {}", traceId, imageUrl);
 
-        // 2. Vision API로 분석
+        // 3. Vision API로 분석
         MealAnalysisRequest domainRequest = MealAnalysisRequest.of(
-                request.getImage(),
+                optimizedImage,
                 request.getName(),
                 request.getWeight(),
                 request.getNotes()
@@ -93,8 +105,9 @@ public class MealAnalyzeService {
         return response;
     }
 
+
     // 일별 조회
-    public List<AnalyzeMealResponse> findDailyMeals(LocalDate date) {
+    public List<AnalyzeMealResponse> findDailyMealsByDate(LocalDate date) {
         String traceId = traceIdHolder.current();
         String userId = currentUserService.getCurrentUserId();
         log.info("[{}] Querying meal records - userId: {}, date: {}", traceId, userId, date);
