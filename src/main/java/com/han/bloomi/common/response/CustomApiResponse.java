@@ -11,7 +11,7 @@ import lombok.Builder;
  */
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record ApiResponse<T>(
+public record CustomApiResponse<T>(
     String code,
     String message,
     T data,
@@ -20,8 +20,8 @@ public record ApiResponse<T>(
     /**
      * 성공 응답 (데이터 있음)
      */
-    public static <T> ApiResponse<T> success(T data) {
-        return ApiResponse.<T>builder()
+    public static <T> CustomApiResponse<T> success(T data) {
+        return CustomApiResponse.<T>builder()
                 .code("SUCCESS")
                 .message("Success")
                 .data(data)
@@ -31,8 +31,8 @@ public record ApiResponse<T>(
     /**
      * 성공 응답 (데이터 있음, 커스텀 메시지)
      */
-    public static <T> ApiResponse<T> success(String message, T data) {
-        return ApiResponse.<T>builder()
+    public static <T> CustomApiResponse<T> success(String message, T data) {
+        return CustomApiResponse.<T>builder()
                 .code("SUCCESS")
                 .message(message)
                 .data(data)
@@ -42,8 +42,8 @@ public record ApiResponse<T>(
     /**
      * 성공 응답 (데이터 없음)
      */
-    public static <T> ApiResponse<T> success(String message) {
-        return ApiResponse.<T>builder()
+    public static <T> CustomApiResponse<T> success(String message) {
+        return CustomApiResponse.<T>builder()
                 .code("SUCCESS")
                 .message(message)
                 .build();
@@ -52,8 +52,8 @@ public record ApiResponse<T>(
     /**
      * 성공 응답 (커스텀 코드)
      */
-    public static <T> ApiResponse<T> of(String code, String message, T data) {
-        return ApiResponse.<T>builder()
+    public static <T> CustomApiResponse<T> of(String code, String message, T data) {
+        return CustomApiResponse.<T>builder()
                 .code(code)
                 .message(message)
                 .data(data)
@@ -63,8 +63,8 @@ public record ApiResponse<T>(
     /**
      * 성공 응답 (TraceId 포함)
      */
-    public static <T> ApiResponse<T> of(String code, String message, T data, String traceId) {
-        return ApiResponse.<T>builder()
+    public static <T> CustomApiResponse<T> of(String code, String message, T data, String traceId) {
+        return CustomApiResponse.<T>builder()
                 .code(code)
                 .message(message)
                 .data(data)

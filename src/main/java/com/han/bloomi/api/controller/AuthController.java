@@ -3,7 +3,7 @@ package com.han.bloomi.api.controller;
 import com.han.bloomi.api.dto.AuthResponse;
 import com.han.bloomi.api.dto.UserResponse;
 import com.han.bloomi.application.service.AuthService;
-import com.han.bloomi.common.response.ApiResponse;
+import com.han.bloomi.common.response.CustomApiResponse;
 import com.han.bloomi.common.swagger.ApiCommonResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -90,11 +90,11 @@ public class AuthController {
     )
     @ApiCommonResponses.AuthenticatedApi
     @GetMapping("/me")
-    public ApiResponse<UserResponse> getCurrentUser(
+    public CustomApiResponse<UserResponse> getCurrentUser(
             @Parameter(hidden = true) @AuthenticationPrincipal String userId
     ) {
         log.info("Get current user: userId={}", userId);
-        return ApiResponse.success("User info retrieved", UserResponse.from(authService.getCurrentUser(userId)));
+        return CustomApiResponse.success("User info retrieved", UserResponse.from(authService.getCurrentUser(userId)));
     }
 
     @Operation(
@@ -108,12 +108,12 @@ public class AuthController {
     )
     @ApiCommonResponses.AuthRequired
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(
+    public CustomApiResponse<Void> logout(
             @Parameter(hidden = true) @AuthenticationPrincipal String userId
     ) {
         log.info("Logout request: userId={}", userId);
         authService.logout(userId);
-        return ApiResponse.success("Logout successful");
+        return CustomApiResponse.success("Logout successful");
     }
 
     @Operation(
@@ -127,11 +127,11 @@ public class AuthController {
     )
     @ApiCommonResponses.AuthenticatedApi
     @DeleteMapping("/me")
-    public ApiResponse<Void> deleteCurrentUser(
+    public CustomApiResponse<Void> deleteCurrentUser(
             @Parameter(hidden = true) @AuthenticationPrincipal String userId
     ) {
         log.info("Delete user request: userId={}", userId);
         authService.deleteUser(userId);
-        return ApiResponse.success("User deleted successfully");
+        return CustomApiResponse.success("User deleted successfully");
     }
 }

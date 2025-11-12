@@ -106,6 +106,18 @@ public class MealAnalyzeService {
     }
 
 
+    public AnalyzeMealResponse findMeal(String id) {
+        String traceId = traceIdHolder.current();
+        String userId = currentUserService.getCurrentUserId();
+
+        MealRecord record = mealRecordRepository.findById(id).orElseThrow(
+                () -> new BusinessException(ErrorCode.INVALID_MEAL_ID, "식단을 찾을 수 없습니다.")
+        );
+
+        return toResponseFromRecord(record, traceId);
+    }
+
+
     // 일별 조회
     public List<AnalyzeMealResponse> findDailyMealsByDate(LocalDate date) {
         String traceId = traceIdHolder.current();
