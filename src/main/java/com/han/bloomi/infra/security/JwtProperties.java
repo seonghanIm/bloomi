@@ -17,13 +17,13 @@ public class JwtProperties {
 
     /**
      * Access Token 유효시간 (밀리초)
-     * 기본: 1시간
+     * 기본: 30일
      */
-    private Long accessTokenValidity = 3600000L;
+    private Long accessTokenValidity = 2592000000L;
 
     /**
      * Refresh Token 유효시간 (밀리초)
-     * 기본: 7일
+     * 기본: 30일
      */
-    private Long refreshTokenValidity = 604800000L;
+    private Long refreshTokenValidity = 2592000000L;
 }
