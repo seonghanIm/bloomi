@@ -48,13 +48,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String state = request.getParameter("state");
         log.info("OAuth callback - state: {}", state);
 
+        // Refresh Token 생성
+        String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getUserId());
+
         // state에 "mobile"이 포함되어 있으면 모바일로 간주
         if (state != null && state.contains("mobile")) {
             // 모바일 앱으로 리다이렉트
-            handleMobileRedirect(response, accessToken, oAuth2User, "bloomi://auth/callback");
+            handleMobileRedirect(response, accessToken, refreshToken, oAuth2User, "bloomi://auth/callback");
         } else {
             // 웹 클라이언트로 리다이렉트 (기존 로직)
-            handleWebRedirect(request, response, accessToken, oAuth2User);
+            handleWebRedirect(request, response, accessToken, refreshToken);
         }
     }
 
@@ -63,6 +66,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
      */
     private void handleMobileRedirect(HttpServletResponse response,
                                        String accessToken,
+                                       String refreshToken,
                                        CustomOAuth2User oAuth2User,
                                        String redirectUri) throws IOException {
         // 사용자 정보 JSON 생성 (모바일 앱에서 필요한 필드만)
@@ -72,7 +76,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 "name", oAuth2User.getName(),
                 "picture", oAuth2User.getPicture() != null ? oAuth2User.getPicture() : "",
                 "provider", oAuth2User.getProvider(),
-                "membership", oAuth2User.getMembership().name()
+                "membership", oAuth2User.getMembership().name(),
+                "isNewUser", oAuth2User.isNewUser(),
+                "termsAgreed", oAuth2User.isTermsAgreed()
         );
 
         String userJson = objectMapper.writeValueAsString(userInfo);
@@ -81,11 +87,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // 모바일 deep link URL 생성
         String mobileUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", accessToken)
+                .queryParam("refreshToken", refreshToken)
                 .queryParam("user", encodedUser)
                 .build()
                 .toUriString();
 
-        log.info("📱 Redirecting to mobile app: {}", redirectUri);
+        log.info("📱 Redirecting to mobile app: {}, isNewUser={}, termsAgreed={}",
+                redirectUri, oAuth2User.isNewUser(), oAuth2User.isTermsAgreed());
         getRedirectStrategy().sendRedirect(null, response, mobileUrl);
     }
 
@@ -95,9 +103,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private void handleWebRedirect(HttpServletRequest request,
                                     HttpServletResponse response,
                                     String accessToken,
-                                    CustomOAuth2User oAuth2User) throws IOException {
-        String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getUserId());
-
+                                    String refreshToken) throws IOException {
         // 프론트엔드로 리다이렉트 (토큰을 쿼리 파라미터로 전달)
         // TODO: 프로덕션에서는 더 안전한 방법 사용 (쿠키, POST 등)
         String targetUrl = UriComponentsBuilder.fromUriString("/auth/callback")

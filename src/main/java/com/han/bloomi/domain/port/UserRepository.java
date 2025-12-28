@@ -48,4 +48,31 @@ public interface UserRepository {
      * 스케줄러에서 자정에 호출됩니다.
      */
     void resetAllDailyRequestCounts();
+
+    /**
+     * 약관 동의 정보를 저장합니다.
+     * @param userId 사용자 ID
+     * @param termsAgreed 서비스 이용 약관 동의
+     * @param privacyAgreed 개인정보 수집 동의
+     * @param marketingAgreed 마케팅 정보 수신 동의
+     * @return 업데이트된 사용자
+     */
+    User agreeToTerms(String userId, Boolean termsAgreed, Boolean privacyAgreed, Boolean marketingAgreed);
+
+    /**
+     * 닉네임 중복 여부를 확인합니다.
+     * @param nickname 닉네임
+     * @return 이미 존재하면 true
+     */
+    boolean existsByNickname(String nickname);
+
+    /**
+     * 온보딩을 완료합니다.
+     * @param userId 사용자 ID
+     * @param nickname 닉네임
+     * @param gender 성별
+     * @param ageRange 연령대
+     * @return 업데이트된 사용자
+     */
+    User completeOnboarding(String userId, String nickname, com.han.bloomi.domain.model.user.Gender gender, com.han.bloomi.domain.model.user.AgeRange ageRange);
 }

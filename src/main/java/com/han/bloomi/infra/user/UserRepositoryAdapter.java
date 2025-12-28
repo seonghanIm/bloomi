@@ -1,5 +1,7 @@
 package com.han.bloomi.infra.user;
 
+import com.han.bloomi.domain.model.user.AgeRange;
+import com.han.bloomi.domain.model.user.Gender;
 import com.han.bloomi.domain.model.user.User;
 import com.han.bloomi.domain.port.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -95,8 +97,41 @@ public class UserRepositoryAdapter implements UserRepository {
                 .lastRequestDate(entity.getLastRequestDate())
                 .deleted(entity.getDeleted())
                 .deletedAt(entity.getDeletedAt())
+                .termsAgreed(entity.getTermsAgreed())
+                .privacyAgreed(entity.getPrivacyAgreed())
+                .marketingAgreed(entity.getMarketingAgreed())
+                .termsAgreedAt(entity.getTermsAgreedAt())
+                .nickname(entity.getNickname())
+                .gender(entity.getGender())
+                .ageRange(entity.getAgeRange())
+                .onboardingCompleted(entity.getOnboardingCompleted())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public User agreeToTerms(String userId, Boolean termsAgreed, Boolean privacyAgreed, Boolean marketingAgreed) {
+        UserEntity entity = jpaRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        entity.agreeToTerms(termsAgreed, privacyAgreed, marketingAgreed);
+        UserEntity saved = jpaRepository.save(entity);
+        return toDomain(saved);
+    }
+
+    @Override
+    public boolean existsByNickname(String nickname) {
+        return jpaRepository.existsByNickname(nickname);
+    }
+
+    @Override
+    public User completeOnboarding(String userId, String nickname, Gender gender, AgeRange ageRange) {
+        UserEntity entity = jpaRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        entity.completeOnboarding(nickname, gender, ageRange);
+        UserEntity saved = jpaRepository.save(entity);
+        return toDomain(saved);
     }
 }

@@ -2,7 +2,6 @@ package com.han.bloomi.domain.model.user;
 
 import lombok.Builder;
 
-import java.lang.reflect.Member;
 import java.time.LocalDateTime;
 
 /**
@@ -22,6 +21,16 @@ public record User(
     LocalDateTime lastRequestDate, // 마지막 요청 날짜
     Boolean deleted,        // 삭제 여부 (soft delete)
     LocalDateTime deletedAt,
+    // 약관 동의 필드
+    Boolean termsAgreed,        // 서비스 이용 약관 동의
+    Boolean privacyAgreed,      // 개인정보 수집 동의
+    Boolean marketingAgreed,    // 마케팅 정보 수신 동의 (선택)
+    LocalDateTime termsAgreedAt,// 약관 동의 시점
+    // 온보딩 필드
+    String nickname,            // 닉네임 (2~12자)
+    Gender gender,              // 성별
+    AgeRange ageRange,          // 연령대
+    Boolean onboardingCompleted,// 온보딩 완료 여부
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
@@ -40,6 +49,14 @@ public record User(
                 .lastRequestDate(null)
                 .deleted(false)
                 .deletedAt(null)
+                .termsAgreed(false)
+                .privacyAgreed(false)
+                .marketingAgreed(false)
+                .termsAgreedAt(null)
+                .nickname(null)
+                .gender(null)
+                .ageRange(null)
+                .onboardingCompleted(false)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -58,6 +75,14 @@ public record User(
                 .lastRequestDate(this.lastRequestDate)
                 .deleted(this.deleted)
                 .deletedAt(this.deletedAt)
+                .termsAgreed(this.termsAgreed)
+                .privacyAgreed(this.privacyAgreed)
+                .marketingAgreed(this.marketingAgreed)
+                .termsAgreedAt(this.termsAgreedAt)
+                .nickname(this.nickname)
+                .gender(this.gender)
+                .ageRange(this.ageRange)
+                .onboardingCompleted(this.onboardingCompleted)
                 .createdAt(this.createdAt)
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -76,9 +101,53 @@ public record User(
                 .lastRequestDate(this.lastRequestDate)
                 .deleted(true)
                 .deletedAt(LocalDateTime.now())
+                .termsAgreed(this.termsAgreed)
+                .privacyAgreed(this.privacyAgreed)
+                .marketingAgreed(this.marketingAgreed)
+                .termsAgreedAt(this.termsAgreedAt)
+                .nickname(this.nickname)
+                .gender(this.gender)
+                .ageRange(this.ageRange)
+                .onboardingCompleted(this.onboardingCompleted)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)
                 .build();
+    }
+
+    /**
+     * 약관 동의 정보를 업데이트합니다.
+     */
+    public User agreeToTerms(Boolean termsAgreed, Boolean privacyAgreed, Boolean marketingAgreed) {
+        return User.builder()
+                .id(this.id)
+                .email(this.email)
+                .name(this.name)
+                .picture(this.picture)
+                .provider(this.provider)
+                .providerId(this.providerId)
+                .membership(this.membership)
+                .dailyRequestCount(this.dailyRequestCount)
+                .lastRequestDate(this.lastRequestDate)
+                .deleted(this.deleted)
+                .deletedAt(this.deletedAt)
+                .termsAgreed(termsAgreed)
+                .privacyAgreed(privacyAgreed)
+                .marketingAgreed(marketingAgreed)
+                .termsAgreedAt(LocalDateTime.now())
+                .nickname(this.nickname)
+                .gender(this.gender)
+                .ageRange(this.ageRange)
+                .onboardingCompleted(this.onboardingCompleted)
+                .createdAt(this.createdAt)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 필수 약관에 동의했는지 확인합니다.
+     */
+    public boolean hasAgreedToRequiredTerms() {
+        return Boolean.TRUE.equals(this.termsAgreed) && Boolean.TRUE.equals(this.privacyAgreed);
     }
 
     /**
@@ -103,9 +172,53 @@ public record User(
                 .lastRequestDate(now)
                 .deleted(this.deleted)
                 .deletedAt(this.deletedAt)
+                .termsAgreed(this.termsAgreed)
+                .privacyAgreed(this.privacyAgreed)
+                .marketingAgreed(this.marketingAgreed)
+                .termsAgreedAt(this.termsAgreedAt)
+                .nickname(this.nickname)
+                .gender(this.gender)
+                .ageRange(this.ageRange)
+                .onboardingCompleted(this.onboardingCompleted)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)
                 .build();
+    }
+
+    /**
+     * 온보딩을 완료합니다.
+     */
+    public User completeOnboarding(String nickname, Gender gender, AgeRange ageRange) {
+        return User.builder()
+                .id(this.id)
+                .email(this.email)
+                .name(this.name)
+                .picture(this.picture)
+                .provider(this.provider)
+                .providerId(this.providerId)
+                .membership(this.membership)
+                .dailyRequestCount(this.dailyRequestCount)
+                .lastRequestDate(this.lastRequestDate)
+                .deleted(this.deleted)
+                .deletedAt(this.deletedAt)
+                .termsAgreed(this.termsAgreed)
+                .privacyAgreed(this.privacyAgreed)
+                .marketingAgreed(this.marketingAgreed)
+                .termsAgreedAt(this.termsAgreedAt)
+                .nickname(nickname)
+                .gender(gender)
+                .ageRange(ageRange)
+                .onboardingCompleted(true)
+                .createdAt(this.createdAt)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 온보딩이 완료되었는지 확인합니다.
+     */
+    public boolean hasCompletedOnboarding() {
+        return Boolean.TRUE.equals(this.onboardingCompleted);
     }
 
     /**

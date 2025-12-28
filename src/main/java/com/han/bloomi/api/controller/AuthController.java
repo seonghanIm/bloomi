@@ -1,7 +1,12 @@
 package com.han.bloomi.api.controller;
 
 import com.han.bloomi.api.dto.AuthResponse;
+import com.han.bloomi.api.dto.NicknameCheckResponse;
+import com.han.bloomi.api.dto.OnboardingRequest;
+import com.han.bloomi.api.dto.RefreshTokenRequest;
+import com.han.bloomi.api.dto.TermsAgreementRequest;
 import com.han.bloomi.api.dto.UserResponse;
+import jakarta.validation.Valid;
 import com.han.bloomi.application.service.AuthService;
 import com.han.bloomi.common.response.CustomApiResponse;
 import com.han.bloomi.common.swagger.ApiCommonResponses;
@@ -133,5 +138,118 @@ public class AuthController {
         log.info("Delete user request: userId={}", userId);
         authService.deleteUser(userId);
         return CustomApiResponse.success("User deleted successfully");
+    }
+
+    @Operation(
+            summary = "토큰 갱신",
+            description = "Refresh Token으로 새로운 Access Token을 발급받습니다.",
+            security = {}
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "토큰 갱신 성공",
+            content = @Content(schema = @Schema(implementation = AuthResponse.class))
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "유효하지 않은 Refresh Token"
+    )
+    @PostMapping("/refresh")
+    public CustomApiResponse<AuthResponse> refreshToken(
+            @RequestBody RefreshTokenRequest request
+    ) {
+        log.info("Token refresh request received");
+        AuthResponse response = authService.refreshAccessToken(request.refreshToken());
+        return CustomApiResponse.success("Token refreshed successfully", response);
+    }
+
+    @Operation(
+            summary = "약관 동의",
+            description = "서비스 이용 약관 및 개인정보 수집 동의를 처리합니다. 신규 사용자는 필수 약관에 동의해야 서비스를 이용할 수 있습니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "약관 동의 성공",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "필수 약관 미동의"
+    )
+    @ApiCommonResponses.AuthenticatedApi
+    @PostMapping("/terms")
+    public CustomApiResponse<UserResponse> agreeToTerms(
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
+            @RequestBody TermsAgreementRequest request
+    ) {
+        log.info("Terms agreement request: userId={}, terms={}, privacy={}, marketing={}",
+                userId, request.termsAgreed(), request.privacyAgreed(), request.marketingAgreed());
+
+        var user = authService.agreeToTerms(
+                userId,
+                request.termsAgreed(),
+                request.privacyAgreed(),
+                request.marketingAgreed()
+        );
+
+        return CustomApiResponse.success("약관 동의가 완료되었습니다.", UserResponse.from(user));
+    }
+
+    @Operation(
+            summary = "닉네임 중복 확인",
+            description = "닉네임 사용 가능 여부를 확인합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "확인 성공",
+            content = @Content(schema = @Schema(implementation = NicknameCheckResponse.class))
+    )
+    @ApiCommonResponses.AuthenticatedApi
+    @GetMapping("/nickname/check")
+    public CustomApiResponse<NicknameCheckResponse> checkNickname(
+            @Parameter(description = "확인할 닉네임", required = true)
+            @RequestParam String nickname
+    ) {
+        log.info("Nickname check request: nickname={}", nickname);
+        boolean available = authService.isNicknameAvailable(nickname);
+        NicknameCheckResponse response = available
+                ? NicknameCheckResponse.ofAvailable()
+                : NicknameCheckResponse.ofNotAvailable();
+        return CustomApiResponse.success("닉네임 확인 완료", response);
+    }
+
+    @Operation(
+            summary = "온보딩 완료",
+            description = "닉네임, 성별, 연령대 정보를 저장하고 온보딩을 완료합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "온보딩 완료 성공",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청 (닉네임 중복, 형식 오류 등)"
+    )
+    @ApiCommonResponses.AuthenticatedApi
+    @PostMapping("/onboarding")
+    public CustomApiResponse<UserResponse> completeOnboarding(
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
+            @Valid @RequestBody OnboardingRequest request
+    ) {
+        log.info("Onboarding request: userId={}, nickname={}, gender={}, ageRange={}",
+                userId, request.nickname(), request.gender(), request.ageRange());
+
+        var user = authService.completeOnboarding(
+                userId,
+                request.nickname(),
+                request.gender(),
+                request.ageRange()
+        );
+
+        return CustomApiResponse.success("온보딩이 완료되었습니다.", UserResponse.from(user));
     }
 }

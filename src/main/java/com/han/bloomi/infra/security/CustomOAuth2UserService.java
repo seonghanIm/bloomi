@@ -70,6 +70,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             log.info("✅ [로그인 완료] userId={}, email={}", user.id(), user.email());
         }
 
+        boolean hasAgreedToTerms = user.hasAgreedToRequiredTerms();
+
         return new CustomOAuth2User(
                 user.id(),
                 user.email(),
@@ -77,6 +79,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user.picture(),
                 user.provider(),
                 user.membership(),
+                isNewUser,
+                hasAgreedToTerms,
                 attributes
         );
     }

@@ -21,4 +21,9 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, String> {
     @Transactional
     @Query("UPDATE UserEntity u SET u.dailyRequestCount = 0 WHERE u.dailyRequestCount > 0")
     void resetAllDailyRequestCounts();
+
+    /**
+     * 닉네임 중복 여부를 확인합니다.
+     */
+    boolean existsByNickname(String nickname);
 }

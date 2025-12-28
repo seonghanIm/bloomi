@@ -81,6 +81,30 @@ public class JwtTokenProvider {
     }
 
     /**
+     * Refresh Token 여부 확인
+     */
+    public boolean isRefreshToken(String token) {
+        try {
+            String type = getClaims(token).get("type", String.class);
+            return "refresh".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Access Token 여부 확인
+     */
+    public boolean isAccessToken(String token) {
+        try {
+            String type = getClaims(token).get("type", String.class);
+            return "access".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * 토큰에서 Claims 추출
      */
     private Claims getClaims(String token) {
