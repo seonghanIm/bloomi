@@ -71,6 +71,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         boolean hasAgreedToTerms = user.hasAgreedToRequiredTerms();
+        boolean hasCompletedOnboarding = user.hasCompletedOnboarding();
+
+        log.info("📋 User status: termsAgreed={}, privacyAgreed={}, hasAgreedToTerms={}, onboardingCompleted={}",
+                user.termsAgreed(), user.privacyAgreed(), hasAgreedToTerms, hasCompletedOnboarding);
 
         return new CustomOAuth2User(
                 user.id(),
@@ -81,6 +85,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user.membership(),
                 isNewUser,
                 hasAgreedToTerms,
+                hasCompletedOnboarding,
                 attributes
         );
     }

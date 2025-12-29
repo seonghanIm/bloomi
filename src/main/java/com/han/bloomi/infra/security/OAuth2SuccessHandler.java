@@ -70,15 +70,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                                        CustomOAuth2User oAuth2User,
                                        String redirectUri) throws IOException {
         // 사용자 정보 JSON 생성 (모바일 앱에서 필요한 필드만)
-        Map<String, Object> userInfo = Map.of(
-                "id", oAuth2User.getUserId(),
-                "email", oAuth2User.getEmail(),
-                "name", oAuth2User.getName(),
-                "picture", oAuth2User.getPicture() != null ? oAuth2User.getPicture() : "",
-                "provider", oAuth2User.getProvider(),
-                "membership", oAuth2User.getMembership().name(),
-                "isNewUser", oAuth2User.isNewUser(),
-                "termsAgreed", oAuth2User.isTermsAgreed()
+        Map<String, Object> userInfo = Map.ofEntries(
+                Map.entry("id", oAuth2User.getUserId()),
+                Map.entry("email", oAuth2User.getEmail()),
+                Map.entry("name", oAuth2User.getName()),
+                Map.entry("picture", oAuth2User.getPicture() != null ? oAuth2User.getPicture() : ""),
+                Map.entry("provider", oAuth2User.getProvider()),
+                Map.entry("membership", oAuth2User.getMembership().name()),
+                Map.entry("isNewUser", oAuth2User.isNewUser()),
+                Map.entry("termsAgreed", oAuth2User.isTermsAgreed()),
+                Map.entry("onboardingCompleted", oAuth2User.isOnboardingCompleted())
         );
 
         String userJson = objectMapper.writeValueAsString(userInfo);

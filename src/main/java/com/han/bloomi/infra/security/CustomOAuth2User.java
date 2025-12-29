@@ -24,6 +24,7 @@ public class CustomOAuth2User implements OAuth2User {
     private final Membership membership;
     private final boolean isNewUser;           // 신규 사용자 여부
     private final boolean termsAgreed;         // 필수 약관 동의 여부
+    private final boolean onboardingCompleted; // 온보딩 완료 여부
     private final Map<String, Object> attributes;
 
     @Override
