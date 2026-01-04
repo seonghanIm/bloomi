@@ -44,17 +44,19 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("JWT tokens generated for user: {}", oAuth2User.getUserId());
 
-        // state 파라미터로 모바일 여부 확인
-        String state = request.getParameter("state");
-        log.info("OAuth callback - state: {}", state);
+        // 모바일 여부 확인 (세션에서 확인)
+        String sessionMobile = (String) request.getSession().getAttribute("mobile_client");
+        log.info("OAuth callback - sessionMobile: {}", sessionMobile);
 
         // Refresh Token 생성
         String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getUserId());
 
-        // state에 "mobile"이 포함되어 있으면 모바일로 간주
-        if (state != null && state.contains("mobile")) {
+        // 세션에 mobile_client가 있으면 모바일로 간주
+        boolean isMobile = "true".equals(sessionMobile);
+
+        if (isMobile) {
             // 모바일 앱으로 리다이렉트
-            handleMobileRedirect(response, accessToken, refreshToken, oAuth2User, "bloomi://auth/callback");
+            handleMobileRedirect(request, response, accessToken, refreshToken, oAuth2User, "bloomi://auth/callback");
         } else {
             // 웹 클라이언트로 리다이렉트 (기존 로직)
             handleWebRedirect(request, response, accessToken, refreshToken);
@@ -64,7 +66,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     /**
      * 모바일 앱으로 deep link 리다이렉트
      */
-    private void handleMobileRedirect(HttpServletResponse response,
+    private void handleMobileRedirect(HttpServletRequest request,
+                                       HttpServletResponse response,
                                        String accessToken,
                                        String refreshToken,
                                        CustomOAuth2User oAuth2User,
@@ -95,7 +98,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("📱 Redirecting to mobile app: {}, isNewUser={}, termsAgreed={}",
                 redirectUri, oAuth2User.isNewUser(), oAuth2User.isTermsAgreed());
-        getRedirectStrategy().sendRedirect(null, response, mobileUrl);
+        response.sendRedirect(mobileUrl);
     }
 
     /**
