@@ -72,6 +72,15 @@ public class SecurityConfig {
                 // JWT 인증 필터 추가
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
+                // 인증 실패 시 401 반환
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다. 토큰이 만료되었거나 유효하지 않습니다.\"}");
+                        })
+                )
+
                 // H2 Console 프레임 허용
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
