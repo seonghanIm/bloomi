@@ -90,7 +90,11 @@ public class MealAnalyzeService {
                 analysis,
                 request.getName(),
                 request.getWeight(),
-                request.getNotes()
+                request.getNotes(),
+                request.getMealType(),
+                request.getEmotion(),
+                request.getLocation(),
+                request.getParticipants()
         );
         mealRecordRepository.save(mealRecord);
         log.info("[{}] Meal record saved to DB - recordId: {}", traceId, recordId);
@@ -100,7 +104,7 @@ public class MealAnalyzeService {
         log.info("[{}] Daily request count incremented for user: {}", traceId, userId);
 
         // 5. API 응답 생성
-        AnalyzeMealResponse response = toResponse(analysis, traceId);
+        AnalyzeMealResponse response = toResponse(analysis, mealRecord, traceId);
         log.info("[{}] Meal analysis completed successfully", traceId);
         return response;
     }
@@ -126,6 +130,11 @@ public class MealAnalyzeService {
 
         List<MealRecord> records = mealRecordRepository.findByUserIdAndAnalyzedAt(userId, date);
         log.info("[{}] Found {} meal records for date: {}", traceId, records.size(), date);
+
+        // 디버깅: 각 레코드의 imageUrl 로깅
+        records.forEach(record ->
+            log.info("[{}] MealRecord - id: {}, name: {}, imageUrl: {}",
+                traceId, record.id(), record.name(), record.imageUrl()));
 
         return records.stream()
                 .map(record -> toResponseFromRecord(record, traceId))
@@ -161,7 +170,7 @@ public class MealAnalyzeService {
                 .build();
     }
 
-    private AnalyzeMealResponse toResponse(MealAnalysis analysis, String traceId) {
+    private AnalyzeMealResponse toResponse(MealAnalysis analysis, MealRecord record, String traceId) {
         return AnalyzeMealResponse.builder()
                 .name(analysis.name())
                 .calories(analysis.calories())
@@ -177,6 +186,11 @@ public class MealAnalyzeService {
                 .items(mapItems(analysis.items()))
                 .confidence(analysis.confidence())
                 .advice(analysis.advice())
+                .imageUrl(record.imageUrl())
+                .mealType(record.mealType())
+                .emotion(record.emotion())
+                .location(record.location())
+                .participants(record.participants())
                 .traceId(traceId)
                 .build();
     }
@@ -197,6 +211,11 @@ public class MealAnalyzeService {
                 .items(List.of()) // 저장된 레코드에는 개별 음식 항목 정보가 없음
                 .confidence(record.confidence())
                 .advice(record.advice())
+                .imageUrl(record.imageUrl())
+                .mealType(record.mealType())
+                .emotion(record.emotion())
+                .location(record.location())
+                .participants(record.participants())
                 .traceId(traceId)
                 .build();
     }

@@ -4,6 +4,7 @@ import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 식단 기록 도메인 모델
@@ -23,6 +24,10 @@ public record MealRecord(
     String userInputName,       // 사용자가 입력한 음식명 (선택)
     Double userInputWeight,     // 사용자가 입력한 중량 (선택)
     String notes,               // 사용자 메모 (선택)
+    MealType mealType,          // 식사 타입 (아침/점심/저녁/간식)
+    MealEmotion emotion,        // 감정 상태
+    String location,            // 식사 장소 (자유 텍스트)
+    List<String> participants,  // 식사 참여자 목록
     LocalDate analyzedAt,       // 분석 날짜
     LocalDateTime createdAt
 ) {
@@ -36,7 +41,11 @@ public record MealRecord(
             MealAnalysis analysis,
             String userInputName,
             Double userInputWeight,
-            String notes
+            String notes,
+            MealType mealType,
+            MealEmotion emotion,
+            String location,
+            List<String> participants
     ) {
         LocalDateTime now = LocalDateTime.now();
         return MealRecord.builder()
@@ -52,6 +61,10 @@ public record MealRecord(
                 .userInputName(userInputName)
                 .userInputWeight(userInputWeight)
                 .notes(notes)
+                .mealType(mealType != null ? mealType : MealType.fromCurrentTime())
+                .emotion(emotion)
+                .location(location)
+                .participants(participants)
                 .analyzedAt(now.toLocalDate())
                 .createdAt(now)
                 .build();

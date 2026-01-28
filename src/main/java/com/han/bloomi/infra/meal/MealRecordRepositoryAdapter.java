@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 식단 기록 저장소 어댑터
@@ -46,8 +47,22 @@ public class MealRecordRepositoryAdapter implements MealRecordRepository {
                 .userInputName(record.userInputName())
                 .userInputWeight(record.userInputWeight())
                 .notes(record.notes())
+                .mealType(record.mealType())
+                .emotion(record.emotion())
+                .location(record.location())
                 .analyzedAt(record.analyzedAt())
                 .build();
+
+        // 참여자 추가
+        if (record.participants() != null && !record.participants().isEmpty()) {
+            for (String participantName : record.participants()) {
+                MealParticipantEntity participant = MealParticipantEntity.builder()
+                        .id(UUID.randomUUID().toString())
+                        .name(participantName)
+                        .build();
+                entity.addParticipant(participant);
+            }
+        }
 
         MealRecordEntity saved = jpaRepository.save(entity);
         return toDomain(saved);
@@ -55,7 +70,7 @@ public class MealRecordRepositoryAdapter implements MealRecordRepository {
 
     @Override
     public Optional<MealRecord> findById(String id) {
-        return jpaRepository.findById(id).map(this::toDomain);
+        return jpaRepository.findByIdWithParticipants(id).map(this::toDomain);
     }
 
     @Override
@@ -85,6 +100,11 @@ public class MealRecordRepositoryAdapter implements MealRecordRepository {
     }
 
     private MealRecord toDomain(MealRecordEntity entity) {
+        // 참여자 목록 변환
+        List<String> participants = entity.getParticipants().stream()
+                .map(MealParticipantEntity::getName)
+                .toList();
+
         return MealRecord.builder()
                 .id(entity.getId())
                 .userId(entity.getUser().getId())
@@ -98,6 +118,10 @@ public class MealRecordRepositoryAdapter implements MealRecordRepository {
                 .userInputName(entity.getUserInputName())
                 .userInputWeight(entity.getUserInputWeight())
                 .notes(entity.getNotes())
+                .mealType(entity.getMealType())
+                .emotion(entity.getEmotion())
+                .location(entity.getLocation())
+                .participants(participants)
                 .analyzedAt(entity.getAnalyzedAt())
                 .createdAt(entity.getCreatedAt())
                 .build();
