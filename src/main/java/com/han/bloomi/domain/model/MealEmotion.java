@@ -4,18 +4,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 식사 감정 상태
+ * 행복도 (5단계)
  */
 @Getter
 @RequiredArgsConstructor
 public enum MealEmotion {
-    HAPPY("행복해요", "😊"),
-    SATISFIED("만족해요", "😋"),
-    NORMAL("보통이에요", "😐"),
-    SAD("슬퍼요", "😢"),
-    STRESSED("스트레스", "😤"),
-    TIRED("피곤해요", "😴");
+    TERRIBLE(1, "죽겠어요"),       // 1단계
+    HARD(2, "조금 힘들어요"),       // 2단계
+    OKAY(3, "할만해요"),           // 3단계
+    ENJOYABLE(4, "즐거워요"),      // 4단계
+    VERY_HAPPY(5, "아주 행복해요"); // 5단계
 
+    private final int level;
     private final String displayName;
-    private final String emoji;
 }

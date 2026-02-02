@@ -2,14 +2,18 @@ package com.han.bloomi.application.service;
 
 import com.han.bloomi.api.dto.AnalyzeMealRequest;
 import com.han.bloomi.api.dto.AnalyzeMealResponse;
+import com.han.bloomi.api.dto.MealResponse;
 import com.han.bloomi.api.dto.MonthlyMealStatisticsResponse;
+import com.han.bloomi.api.dto.SaveMealRequest;
 import com.han.bloomi.common.error.ErrorCode;
 import com.han.bloomi.common.exception.BusinessException;
 import com.han.bloomi.common.trace.TraceIdHolder;
 import com.han.bloomi.domain.model.FoodItem;
+import com.han.bloomi.domain.model.Macros;
 import com.han.bloomi.domain.model.MealAnalysis;
 import com.han.bloomi.domain.model.MealAnalysisRequest;
 import com.han.bloomi.domain.model.MealRecord;
+import com.han.bloomi.domain.model.Serving;
 import com.han.bloomi.domain.model.user.User;
 import com.han.bloomi.domain.port.MealRecordRepository;
 import com.han.bloomi.domain.port.UserRepository;
@@ -40,24 +44,28 @@ public class MealAnalyzeService {
     private final ImageUploadService imageUploadService;
     private final ImageProcessor imageProcessor;
 
+    /**
+     * 1단계: 이미지 분석만 수행 (DB 저장 X)
+     * - 이미지를 S3에 업로드
+     * - Vision API로 분석
+     * - 분석 결과만 반환
+     */
     @Transactional
     public AnalyzeMealResponse analyze(AnalyzeMealRequest request) {
         String traceId = traceIdHolder.current();
         String userId = currentUserService.getCurrentUserId();
-        log.info("[{}] Starting meal analysis - userId: {}, image: {}", traceId, userId, request.getImage().getOriginalFilename());
+        log.info("[{}] Starting meal analysis (analyze only) - userId: {}", traceId, userId);
 
         // 0. 일일 요청 제한 체크
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         if (user.hasExceededDailyLimit()) {
-            log.warn("[{}] Daily limit exceeded - userId: {}, membership: {}, dailyRequestCount: {}",
-                    traceId, userId, user.membership(), user.dailyRequestCount());
-            throw new BusinessException(ErrorCode.DAILY_LIMIT_EXCEEDED,
-                    String.format("User %s has exceeded daily limit (count: %d)", userId, user.dailyRequestCount()));
+            log.warn("[{}] Daily limit exceeded - userId: {}", traceId, userId);
+            throw new BusinessException(ErrorCode.DAILY_LIMIT_EXCEEDED);
         }
 
-        // 1. 이미지 최적화 (리사이즈 + 압축)
+        // 1. 이미지 최적화
         MultipartFile optimizedImage;
         try {
             optimizedImage = imageProcessor.optimize(request.getImage());
@@ -76,54 +84,72 @@ public class MealAnalyzeService {
                 optimizedImage,
                 request.getName(),
                 request.getWeight(),
-                request.getNotes()
+                null  // notes는 저장 단계에서 입력
         );
         MealAnalysis analysis = visionPort.analyze(domainRequest);
         log.info("[{}] Vision analysis completed - calories: {}", traceId, analysis.calories());
 
-        // 3. DB에 분석 결과 저장 (도메인 로직)
-        String recordId = UUID.randomUUID().toString();
-        MealRecord mealRecord = MealRecord.of(
-                recordId,
-                userId,
-                imageUrl,
-                analysis,
-                request.getName(),
-                request.getWeight(),
-                request.getNotes(),
-                request.getMealType(),
-                request.getEmotion(),
-                request.getLocation(),
-                request.getParticipants()
-        );
-        mealRecordRepository.save(mealRecord);
-        log.info("[{}] Meal record saved to DB - recordId: {}", traceId, recordId);
-
         // 4. 요청 카운트 증가
         userRepository.incrementDailyRequestCount(userId);
-        log.info("[{}] Daily request count incremented for user: {}", traceId, userId);
+        log.info("[{}] Daily request count incremented", traceId);
 
-        // 5. API 응답 생성
-        AnalyzeMealResponse response = toResponse(analysis, mealRecord, traceId);
-        log.info("[{}] Meal analysis completed successfully", traceId);
-        return response;
+        // 5. 분석 결과만 반환 (DB 저장 X)
+        return toAnalyzeResponse(analysis, imageUrl, traceId);
     }
 
-
-    public AnalyzeMealResponse findMeal(String id) {
+    /**
+     * 2단계: 분석 결과 + 사용자 메타데이터 저장
+     */
+    @Transactional
+    public MealResponse save(SaveMealRequest request) {
         String traceId = traceIdHolder.current();
         String userId = currentUserService.getCurrentUserId();
+        log.info("[{}] Saving meal record - userId: {}, name: {}", traceId, userId, request.name());
 
-        MealRecord record = mealRecordRepository.findById(id).orElseThrow(
-                () -> new BusinessException(ErrorCode.INVALID_MEAL_ID, "식단을 찾을 수 없습니다.")
-        );
+        // 1. MealRecord 생성
+        String recordId = UUID.randomUUID().toString();
+        MealRecord mealRecord = MealRecord.builder()
+                .id(recordId)
+                .userId(userId)
+                .imageUrl(request.imageUrl())
+                .name(request.name())
+                .calories(request.calories())
+                .macros(new Macros(request.carbs(), request.protein(), request.fat()))
+                .serving(new Serving(request.servingUnit(), request.servingAmount()))
+                .confidence(request.confidence() != null ? request.confidence() : 0.0)
+                .advice(request.advice())
+                .userInputName(null)
+                .userInputWeight(null)
+                .notes(request.notes())
+                .mealType(request.mealType())
+                .emotion(request.emotion())
+                .location(request.location())
+                .participants(request.participants())
+                .analyzedAt(request.analyzedAt())
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
 
-        return toResponseFromRecord(record, traceId);
+        // 2. DB 저장
+        MealRecord saved = mealRecordRepository.save(mealRecord);
+        log.info("[{}] Meal record saved - id: {}", traceId, saved.id());
+
+        return toMealResponse(saved, traceId);
     }
 
+    /**
+     * 식단 상세 조회
+     */
+    public MealResponse findMeal(String id) {
+        String traceId = traceIdHolder.current();
+        MealRecord record = mealRecordRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_MEAL_ID));
+        return toMealResponse(record, traceId);
+    }
 
-    // 일별 조회
-    public List<AnalyzeMealResponse> findDailyMealsByDate(LocalDate date) {
+    /**
+     * 일별 조회
+     */
+    public List<MealResponse> findDailyMealsByDate(LocalDate date) {
         String traceId = traceIdHolder.current();
         String userId = currentUserService.getCurrentUserId();
         log.info("[{}] Querying meal records - userId: {}, date: {}", traceId, userId, date);
@@ -131,36 +157,26 @@ public class MealAnalyzeService {
         List<MealRecord> records = mealRecordRepository.findByUserIdAndAnalyzedAt(userId, date);
         log.info("[{}] Found {} meal records for date: {}", traceId, records.size(), date);
 
-        // 디버깅: 각 레코드의 imageUrl 로깅
-        records.forEach(record ->
-            log.info("[{}] MealRecord - id: {}, name: {}, imageUrl: {}",
-                traceId, record.id(), record.name(), record.imageUrl()));
-
         return records.stream()
-                .map(record -> toResponseFromRecord(record, traceId))
+                .map(record -> toMealResponse(record, traceId))
                 .toList();
     }
 
-    // 월별 통계 조회
+    /**
+     * 월별 통계 조회
+     */
     public MonthlyMealStatisticsResponse getMonthlyStatistics(YearMonth yearMonth) {
         String traceId = traceIdHolder.current();
         String userId = currentUserService.getCurrentUserId();
-        log.info("[{}] Querying monthly statistics - userId: {}, yearMonth: {}", traceId, userId, yearMonth);
+        log.info("[{}] Querying monthly statistics - yearMonth: {}", traceId, yearMonth);
 
-        // 해당 월의 시작일과 마지막일 계산
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
 
-        // 해당 월의 모든 식단 기록 조회
         List<MealRecord> records = mealRecordRepository.findByUserIdAndAnalyzedAtBetween(userId, startDate, endDate);
-        log.info("[{}] Found {} meal records for month: {}", traceId, records.size(), yearMonth);
 
-        // 날짜별로 그룹핑하여 건수 집계
         Map<LocalDate, Long> dailyCounts = records.stream()
-                .collect(Collectors.groupingBy(
-                        MealRecord::analyzedAt,
-                        Collectors.counting()
-                ));
+                .collect(Collectors.groupingBy(MealRecord::analyzedAt, Collectors.counting()));
 
         return MonthlyMealStatisticsResponse.builder()
                 .yearMonth(yearMonth.toString())
@@ -170,8 +186,11 @@ public class MealAnalyzeService {
                 .build();
     }
 
-    private AnalyzeMealResponse toResponse(MealAnalysis analysis, MealRecord record, String traceId) {
+    // === Private Helper Methods ===
+
+    private AnalyzeMealResponse toAnalyzeResponse(MealAnalysis analysis, String imageUrl, String traceId) {
         return AnalyzeMealResponse.builder()
+                .imageUrl(imageUrl)
                 .name(analysis.name())
                 .calories(analysis.calories())
                 .macros(AnalyzeMealResponse.Macros.builder()
@@ -186,36 +205,33 @@ public class MealAnalyzeService {
                 .items(mapItems(analysis.items()))
                 .confidence(analysis.confidence())
                 .advice(analysis.advice())
-                .imageUrl(record.imageUrl())
-                .mealType(record.mealType())
-                .emotion(record.emotion())
-                .location(record.location())
-                .participants(record.participants())
                 .traceId(traceId)
                 .build();
     }
 
-    private AnalyzeMealResponse toResponseFromRecord(MealRecord record, String traceId) {
-        return AnalyzeMealResponse.builder()
+    private MealResponse toMealResponse(MealRecord record, String traceId) {
+        return MealResponse.builder()
+                .id(record.id())
+                .imageUrl(record.imageUrl())
                 .name(record.name())
                 .calories(record.calories())
-                .macros(AnalyzeMealResponse.Macros.builder()
+                .macros(MealResponse.Macros.builder()
                         .carbs(record.macros().carbs())
                         .protein(record.macros().protein())
                         .fat(record.macros().fat())
                         .build())
-                .serving(AnalyzeMealResponse.Serving.builder()
+                .serving(MealResponse.Serving.builder()
                         .unit(record.serving().unit())
                         .amount(record.serving().amount())
                         .build())
-                .items(List.of()) // 저장된 레코드에는 개별 음식 항목 정보가 없음
                 .confidence(record.confidence())
                 .advice(record.advice())
-                .imageUrl(record.imageUrl())
+                .analyzedAt(record.analyzedAt())
                 .mealType(record.mealType())
                 .emotion(record.emotion())
-                .location(record.location())
+                .notes(record.notes())
                 .participants(record.participants())
+                .location(record.location())
                 .traceId(traceId)
                 .build();
     }
