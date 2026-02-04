@@ -22,7 +22,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, HttpServletRequest request) {
         String traceId = traceIdHolder.current();
-        log.error("[{}] BusinessException: {} - {}", traceId, ex.getErrorCode().getCode(), ex.getMessage(), ex);
+
+        // 비즈니스 예외는 warn 레벨로 로깅 (스택트레이스 제외)
+        log.warn("[{}] BusinessException: {} - {}", traceId, ex.getErrorCode().getCode(), ex.getMessage());
 
         ErrorResponse errorResponse = ErrorResponse.of(ex.getErrorCode(), traceId, ex.getDetail());
         return ResponseEntity

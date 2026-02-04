@@ -1,5 +1,6 @@
 package com.han.bloomi.api.dto;
 
+import com.han.bloomi.domain.model.MealEmotion;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -14,6 +15,9 @@ public record MonthlyMealStatisticsResponse(
 
         @Schema(description = "날짜별 식단 기록 건수 (날짜 → 건수)")
         Map<LocalDate, Long> dailyCounts,
+
+        @Schema(description = "날짜별 대표 감정 (날짜 → 감정). 해당 날짜의 가장 최근 식사 감정을 사용")
+        Map<LocalDate, MealEmotion> dailyEmotions,
 
         @Schema(description = "총 기록 건수", example = "45")
         long totalCount,

@@ -175,12 +175,30 @@ public class MealAnalyzeService {
 
         List<MealRecord> records = mealRecordRepository.findByUserIdAndAnalyzedAtBetween(userId, startDate, endDate);
 
+        // 날짜별 식사 건수
         Map<LocalDate, Long> dailyCounts = records.stream()
                 .collect(Collectors.groupingBy(MealRecord::analyzedAt, Collectors.counting()));
+
+        // 날짜별 대표 감정 (해당 날짜 모든 식사의 감정 레벨 평균)
+        Map<LocalDate, com.han.bloomi.domain.model.MealEmotion> dailyEmotions = records.stream()
+                .filter(r -> r.emotion() != null)
+                .collect(Collectors.groupingBy(
+                        MealRecord::analyzedAt,
+                        Collectors.collectingAndThen(
+                                Collectors.averagingInt(r -> r.emotion().getLevel()),
+                                avgLevel -> {
+                                    // 평균 레벨을 반올림하여 가장 가까운 감정으로 변환
+                                    int roundedLevel = (int) Math.round(avgLevel);
+                                    roundedLevel = Math.max(1, Math.min(5, roundedLevel)); // 1-5 범위로 제한
+                                    return com.han.bloomi.domain.model.MealEmotion.values()[roundedLevel - 1];
+                                }
+                        )
+                ));
 
         return MonthlyMealStatisticsResponse.builder()
                 .yearMonth(yearMonth.toString())
                 .dailyCounts(dailyCounts)
+                .dailyEmotions(dailyEmotions)
                 .totalCount(records.size())
                 .traceId(traceId)
                 .build();
